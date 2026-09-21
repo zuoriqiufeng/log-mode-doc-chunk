@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>文档分块向量化平台</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header>
+    <h1>文档分块向量化平台</h1>
+    <div class="header-info">
+      <span id="backendStatus" class="status-dot"></span>
+      <span id="backendStatusText">连接中...</span>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab-btn active" data-tab="config">参数配置</button>
+    <button class="tab-btn" data-tab="import">文档导入</button>
+    <button class="tab-btn" data-tab="tasks">任务状态</button>
+    <button class="tab-btn" data-tab="query">向量查询</button>
+    <button class="tab-btn" data-tab="logpatterns">日志模式导入</button>
+  </nav>
+
+  <main>
+    <!-- ========== 参数配置 ========== -->
+    <section id="tab-config" class="tab-content active">
+      <form id="configForm">
+        <div class="config-grid">
+          <fieldset>
+            <legend>分块参数</legend>
+            <div class="form-group">
+              <label for="chunk_size">Chunk Token 上限</label>
+              <input type="number" id="chunk_size" name="chunk_size" value="512" min="64" max="4096">
+            </div>
+            <div class="form-group">
+              <label for="mini_chunk_size">Mini-Chunk Token 上限</label>
+              <input type="number" id="mini_chunk_size" name="mini_chunk_size" value="150" min="32" max="1024">
+            </div>
+            <div class="form-group">
+              <label for="enable_large_chunks">启用大 Chunk</label>
+              <select id="enable_large_chunks" name="enable_large_chunks">
+                <option value="true">是</option>
+                <option value="false">否</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="large_chunk_ratio">大 Chunk 合并比例</label>
+              <input type="number" id="large_chunk_ratio" name="large_chunk_ratio" value="4" min="2" max="16">
+            </div>
+            <div class="form-group">
+              <label for="enable_contextual_rag">启用 Contextual RAG</label>
+              <select id="enable_contextual_rag" name="enable_contextual_rag">
+                <option value="true">是</option>
+                <option value="false">否</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="use_llm">使用 LLM 生成上下文</label>
+              <select id="use_llm" name="use_llm">
+                <option value="false">否（规则模式）</option>
+                <option value="true">是（需 OpenAI API Key）</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="enable_enrichment">BGE 预富化</label>
+              <select id="enable_enrichment" name="enable_enrichment">
+                <option value="false">否</option>
+                <option value="true">是（自动检测错误码/版本号等符号串）</option>
+              </select>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>向量化参数</legend>
+            <div class="form-group">
+              <label for="embedding_backend">嵌入后端</label>
+              <select id="embedding_backend" name="embedding_backend">
+                <option value="openai">OpenAI API</option>
+                <option value="local">本地模型</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="embedding_model">嵌入模型名称</label>
+              <input type="text" id="embedding_model" name="embedding_model" value="text-embedding-3-small" placeholder="text-embedding-3-small 或 all-MiniLM-L6-v2">
+            </div>
+            <div class="form-group">
+              <label for="embedding_batch_size">批处理大小</label>
+              <input type="number" id="embedding_batch_size" name="embedding_batch_size" value="100" min="1" max="1000">
+            </div>
+            <div class="form-group" id="group_device">
+              <label for="embedding_device">运行设备</label>
+              <select id="embedding_device" name="embedding_device">
+                <option value="cpu">CPU</option>
+                <option value="cuda">CUDA</option>
+                <option value="cuda:0">CUDA:0</option>
+              </select>
+            </div>
+            <div class="form-group" id="group_normalize">
+              <label for="normalize_embeddings">L2 归一化</label>
+              <select id="normalize_embeddings" name="normalize_embeddings">
+                <option value="false">否</option>
+                <option value="true">是</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="openai_api_key">OpenAI API Key</label>
+              <input type="password" id="openai_api_key" name="openai_api_key" placeholder="sk-..." autocomplete="off">
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>图片处理参数</legend>
+            <div class="form-group">
+              <label for="enable_image_processing">启用图片处理</label>
+              <select id="enable_image_processing" name="enable_image_processing">
+                <option value="false">否</option>
+                <option value="true">是（OCR / Vision）</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="image_processor_backend">图片处理后端</label>
+              <select id="image_processor_backend" name="image_processor_backend">
+                <option value="local">本地 EasyOCR</option>
+                <option value="remote">远程 OpenAI Vision</option>
+              </select>
+            </div>
+            <div class="form-group ip-remote-field" id="group_image_processor_model">
+              <label for="image_processor_model">远程模型名称</label>
+              <input type="text" id="image_processor_model" name="image_processor_model" value="gpt-4o-mini" placeholder="gpt-4o-mini / gpt-4o">
+            </div>
+            <div class="form-group ip-remote-field" id="group_image_processor_base_url">
+              <label for="image_processor_base_url">远程 Base URL</label>
+              <input type="text" id="image_processor_base_url" name="image_processor_base_url" value="" placeholder="https://api.openai.com/v1（留空使用官方地址）">
+            </div>
+            <div class="form-group ip-remote-field" id="group_image_processor_api_key">
+              <label for="image_processor_api_key">远程 API Key</label>
+              <input type="password" id="image_processor_api_key" name="image_processor_api_key" placeholder="sk-...（默认使用 OpenAI API Key）" autocomplete="off">
+            </div>
+            <div class="form-group ip-local-field" id="group_ocr_languages">
+              <label for="ocr_languages">OCR 语言列表</label>
+              <input type="text" id="ocr_languages" name="ocr_languages" value="ch_sim,en" placeholder="ch_sim,en">
+            </div>
+            <div class="form-group ip-local-field" id="group_ocr_device">
+              <label for="ocr_device">本地运行设备</label>
+              <select id="ocr_device" name="ocr_device">
+                <option value="cpu">CPU</option>
+                <option value="cuda">CUDA</option>
+                <option value="cuda:0">CUDA:0</option>
+              </select>
+            </div>
+            <div class="form-group ip-local-field" id="group_image_min_width">
+              <label for="image_min_width">最小处理宽度（像素）</label>
+              <input type="number" id="image_min_width" name="image_min_width" value="10" min="0">
+            </div>
+            <div class="form-group ip-local-field" id="group_image_min_height">
+              <label for="image_min_height">最小处理高度（像素）</label>
+              <input type="number" id="image_min_height" name="image_min_height" value="10" min="0">
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>向量数据库 (Qdrant)</legend>
+            <div class="form-group">
+              <label for="qdrant_mode">运行模式</label>
+              <select id="qdrant_mode" name="qdrant_mode">
+                <option value="local">本地存储</option>
+                <option value="remote">远程服务器</option>
+              </select>
+            </div>
+            <div class="form-group" id="group_qdrant_path">
+              <label for="qdrant_path">本地存储路径</label>
+              <input type="text" id="qdrant_path" name="qdrant_path" value="./qdrant_data">
+            </div>
+            <div class="form-group remote-field" id="group_qdrant_host">
+              <label for="qdrant_host">服务器地址</label>
+              <input type="text" id="qdrant_host" name="qdrant_host" value="localhost">
+            </div>
+            <div class="form-group remote-field" id="group_qdrant_port">
+              <label for="qdrant_port">HTTP 端口</label>
+              <input type="number" id="qdrant_port" name="qdrant_port" value="6333">
+            </div>
+            <div class="form-group remote-field" id="group_qdrant_grpc_port">
+              <label for="qdrant_grpc_port">gRPC 端口</label>
+              <input type="number" id="qdrant_grpc_port" name="qdrant_grpc_port" value="6334">
+            </div>
+            <div class="form-group remote-field" id="group_qdrant_https">
+              <label for="qdrant_https">使用 HTTPS</label>
+              <select id="qdrant_https" name="qdrant_https">
+                <option value="false">否</option>
+                <option value="true">是</option>
+              </select>
+            </div>
+            <div class="form-group remote-field" id="group_qdrant_api_key">
+              <label for="qdrant_api_key">API Key</label>
+              <input type="password" id="qdrant_api_key" name="qdrant_api_key" placeholder="可选" autocomplete="off">
+            </div>
+            <div class="form-group">
+              <label for="qdrant_collection_name">Collection 名称</label>
+              <input type="text" id="qdrant_collection_name" name="qdrant_collection_name" value="test_doc_chunks">
+            </div>
+            <div class="form-group">
+              <label for="qdrant_distance">距离度量</label>
+              <select id="qdrant_distance" name="qdrant_distance">
+                <option value="cosine">Cosine</option>
+                <option value="euclidean">Euclidean</option>
+                <option value="dot">Dot</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="qdrant_vector_size">向量维度</label>
+              <input type="number" id="qdrant_vector_size" name="qdrant_vector_size" value="1536" min="1">
+            </div>
+            <div class="form-group">
+              <label for="log_pattern_collection_name">日志模式 Collection</label>
+              <input type="text" id="log_pattern_collection_name" name="log_pattern_collection_name" value="log_patterns_collection">
+            </div>
+          </fieldset>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">保存配置</button>
+          <span id="configSaveMsg" class="form-message"></span>
+        </div>
+      </form>
+    </section>
+
+    <!-- ========== 文档导入 ========== -->
+    <section id="tab-import" class="tab-content">
+      <div class="upload-zone" id="dropZone">
+        <div class="upload-icon">+</div>
+        <p>拖拽文件到此处，或点击选择文件</p>
+        <p class="upload-hint">支持格式：PDF, TXT, DOC, DOCX, XLSX, XLS, PNG, JPG, GIF, BMP, TIFF, MD, HTML, CSV, JSON, XML, LOG；Markdown 含本地图片请打包为 ZIP 上传</p>
+        <input type="file" id="fileInput" multiple accept=".pdf,.txt,.doc,.docx,.xlsx,.xls,.png,.jpg,.jpeg,.gif,.bmp,.tiff,.tif,.md,.html,.htm,.csv,.tsv,.json,.xml,.log,.conf,.cfg,.ini,.yml,.yaml,.sql,.xsl,.xsd,.zip" hidden>
+      </div>
+
+      <div id="fileList" class="file-list">
+        <div class="file-list-header">
+          <h3>已上传文件</h3>
+          <button class="btn btn-danger btn-sm" id="clearAllBtn" disabled>清空全部</button>
+        </div>
+        <table id="fileTable" class="data-table">
+          <thead>
+            <tr>
+              <th><input type="checkbox" id="selectAll"></th>
+              <th>文件名</th>
+              <th>大小</th>
+              <th>类型</th>
+              <th>上传时间</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="fileTableBody">
+          </tbody>
+        </table>
+        <div id="emptyFileHint" class="empty-hint">暂无文件，请上传文档</div>
+      </div>
+
+      <div class="process-actions">
+        <label class="checkbox-label">
+          <input type="checkbox" id="enableEmbedding" checked> 启用向量化
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" id="enableVectorStore" checked> 写入 Qdrant
+        </label>
+        <button class="btn btn-primary btn-lg" id="processBtn" disabled>开始向量化</button>
+      </div>
+    </section>
+
+    <!-- ========== 任务状态 ========== -->
+    <section id="tab-tasks" class="tab-content">
+      <div class="task-toolbar">
+        <h3>处理任务</h3>
+        <button class="btn btn-sm" id="refreshTasksBtn">刷新</button>
+        <button class="btn btn-sm" id="repeatLastTaskBtn">重复上一次任务</button>
+      </div>
+      <div id="taskList">
+        <div id="emptyTaskHint" class="empty-hint">暂无处理任务</div>
+      </div>
+    </section>
+
+    <!-- ========== 向量查询 ========== -->
+    <section id="tab-query" class="tab-content">
+      <div class="query-panel">
+        <div class="query-input-row">
+          <input type="text" id="queryInput" placeholder="输入查询文本..." class="query-text">
+          <input type="number" id="queryTopK" value="5" min="1" max="50" class="query-topk" title="返回结果数">
+          <button class="btn btn-primary" id="queryBtn">搜索</button>
+        </div>
+        <div class="query-filter-row">
+          <input type="text" id="queryFilter" placeholder="过滤条件: document_id=path/to/file（可选）" class="query-filter">
+        </div>
+      </div>
+      <div id="queryResults">
+        <div id="emptyQueryHint" class="empty-hint">输入查询文本进行语义搜索</div>
+      </div>
+    </section>
+    <!-- ========== 日志模式导入 ========== -->
+    <section id="tab-logpatterns" class="tab-content">
+      <div class="lp-panel">
+        <div class="form-group">
+          <label for="lpCollection">目标 Collection（留空使用配置中的日志模式集合）</label>
+          <input type="text" id="lpCollection" placeholder="log_patterns_collection">
+        </div>
+
+        <div class="lp-mode-row">
+          <label class="radio-label">
+            <input type="radio" name="lpMode" value="file" checked> 文件上传
+          </label>
+          <label class="radio-label">
+            <input type="radio" name="lpMode" value="text"> 纯文本 JSON
+          </label>
+        </div>
+
+        <div id="lpFileArea">
+          <div class="upload-zone" id="lpDropZone">
+            <div class="upload-icon">+</div>
+            <p>拖拽日志模式文件到此处，或点击选择</p>
+            <p class="upload-hint">支持格式：JSON, YAML, CSV, TSV, XLSX, XLS</p>
+            <input type="file" id="lpFileInput" accept=".json,.yaml,.yml,.csv,.tsv,.xlsx,.xls" hidden>
+          </div>
+        </div>
+
+        <div id="lpTextArea" style="display:none">
+          <div class="form-group">
+            <label for="lpJsonText">粘贴日志模式 JSON（数组或 {"patterns": [...]}）</label>
+            <textarea id="lpJsonText" class="lp-json-text" rows="12" placeholder='[{"pattern_id": "LP-0001", "log_fingerprint": ["connection refused"], "component": "loader", ...}]'></textarea>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button class="btn btn-primary" id="lpImportBtn">导入日志模式</button>
+          <span id="lpImportMsg" class="form-message"></span>
+        </div>
+
+        <div id="lpResult" class="lp-result"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

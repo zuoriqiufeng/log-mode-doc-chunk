@@ -1,0 +1,12 @@
+api_key: null
+auto_create_collection: true
+collection_name: i2stream_collection
+distance: cosine
+grpc_port: 6334
+host: localhost
+https: false
+mode: remote
+path: ./qdrant_data
+port: 6333
+upsert_batch_size: 100
+vector_size: 1024

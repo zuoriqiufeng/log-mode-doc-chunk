@@ -1,0 +1,53 @@
+# ==================== 密钥与本地配置（严禁入库） ====================
+# .env 内含真实 API Key，仓库只保留 .env.example 模板
+.env
+.env.local
+.env.*.local
+.claude/settings.local.json
+
+# ==================== 虚拟环境与 Python 产物 ====================
+venv/
+.venv/
+env/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# ==================== 运行期数据与缓存（体积大 / 可重建） ====================
+# 本地嵌入模型缓存（约 2.5 GB）
+HuggingFace/
+# Qdrant 本地落盘数据
+qdrant_data/
+# 图片处理（OCR / Vision）结果缓存
+.image_cache/
+web/.image_cache/
+# Web 端上传的原始文档
+web/uploads/
+# CLI 默认输出目录
+chunks_output/
+*.log
+nohup.out
+# 样例日志文件是日志提取器的测试输入，需保留
+!word/sample.log
+
+# ==================== 大体积样例文档 ====================
+# word/ 仅保留小体积样例（sample.*）；以下为真实业务文档，体积数 MB 且可能含内部信息
+word/1.pdf
+word/2.pdf
+word/3.docx
+word/4.docx
+# 该文件描述的是另一个项目（Agentic-RAG Service），不属于本仓库
+word/DEVELOPMENT.md
+
+# ==================== 个人资料与会话记录 ====================
+# 简历等个人交付物，不随代码入库
+resume_output/
+.zcode/
+
+# ==================== 编辑器与系统 ====================
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

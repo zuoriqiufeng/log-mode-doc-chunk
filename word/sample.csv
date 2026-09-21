@@ -1,0 +1,6 @@
+id,name,role,department,email
+1,Alice Johnson,CEO,Executive,alice@example.com
+2,Bob Smith,CTO,Engineering,bob@example.com
+3,Carol White,CFO,Finance,carol@example.com
+4,David Brown,VP Sales,Sales,david@example.com
+5,Eve Davis,VP Product,Product,eve@example.com

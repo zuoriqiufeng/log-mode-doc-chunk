@@ -1,0 +1,10 @@
+2025-01-15T08:23:01Z INFO [main] Server starting on port 8080
+2025-01-15T08:23:02Z DEBUG [db] Connecting to database postgresql://db.internal:5432/app
+2025-01-15T08:23:03Z INFO [db] Database connection established
+2025-01-15T08:23:04Z WARN [cache] Cache miss for key user:12345
+2025-01-15T08:23:05Z INFO [http] GET /api/users 200 45ms
+2025-01-15T08:23:06Z INFO [http] POST /api/login 200 120ms
+2025-01-15T08:23:07Z ERROR [auth] Invalid token provided for user 99999
+2025-01-15T08:23:08Z INFO [http] GET /api/dashboard 200 78ms
+2025-01-15T08:23:09Z DEBUG [cache] Cache hit for key config:v2
+2025-01-15T08:23:10Z INFO [main] Health check passed

@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python multi_doc_processor.py *)",
+      "Bash(python query.py *)",
+      "Bash(pip install *)",
+      "Bash(python -c *)"
+    ]
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "name": "api-config",
+  "version": "2.1.0",
+  "title": "API Configuration",
+  "description": "Production API gateway configuration",
+  "services": [
+    {
+      "name": "auth-service",
+      "host": "auth.internal",
+      "port": 8080,
+      "endpoints": ["/login", "/logout", "/refresh"]
+    },
+    {
+      "name": "data-service",
+      "host": "data.internal",
+      "port": 8081,
+      "endpoints": ["/query", "/upload", "/download"]
+    }
+  ],
+  "settings": {
+    "timeout": 30,
+    "retries": 3,
+    "log_level": "info"
+  }
+}

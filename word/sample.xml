@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config>
+  <title>System Configuration</title>
+  <server>
+    <host>localhost</host>
+    <port>3000</port>
+  </server>
+  <database>
+    <driver>postgresql</driver>
+    <host>db.internal</host>
+    <port>5432</port>
+    <name>production</name>
+  </database>
+  <features>
+    <feature name="caching" enabled="true"/>
+    <feature name="logging" enabled="true"/>
+    <feature name="metrics" enabled="false"/>
+  </features>
+</config>

@@ -1,0 +1,7 @@
+# 图片处理可选依赖，仅在 ENABLE_IMAGE_PROCESSING=true 时需要安装
+
+# 本地 OCR 后端
+easyocr>=1.7.0
+
+# 远程后端（项目通常已安装）
+openai

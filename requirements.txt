@@ -1,0 +1,39 @@
+# chunk 运行依赖
+# 安装: pip install -r requirements.txt
+# 可选依赖见 requirements-image.txt（本地 OCR 后端）
+# 已验证环境: Python 3.13（3.9+ 均可）
+
+# ---- 文档提取 ----
+pypdf>=6.0                # PDF 文本/图片提取
+python-docx>=1.1          # Word (.docx)
+beautifulsoup4>=4.12      # HTML 解析
+markdownify>=1.0          # HTML → Markdown
+chardet>=5.0              # 文本编码探测
+openpyxl>=3.1             # Excel (.xlsx)
+xlrd>=2.0                 # Excel (.xls)
+Pillow>=10.0              # 图片解码
+
+# ---- 分块 ----
+chonkie>=1.0              # token 级分块（标准 chunk / mini-chunk）
+
+# ---- 向量嵌入 ----
+openai>=1.0               # OpenAI 嵌入后端（text-embedding-3-*）
+# 本地嵌入后端（EMBEDDING_BACKEND=local）需额外安装:
+#   pip install sentence-transformers>=3.0
+
+# ---- 向量库 ----
+qdrant-client>=1.9
+
+# ---- 配置 ----
+python-dotenv>=1.0        # 加载 .env
+PyYAML>=6.0               # 读取 qdrant.yml
+
+# ---- Web 服务 ----
+Flask>=3.0                # web/app.py、web/frontend.py
+
+# ---- 通用 ----
+numpy>=1.24               # 向量保存（.npy）与本地 OCR 后处理
+requests>=2.31            # 前端反向代理
+
+# ---- 样例数据生成 ----
+reportlab>=4.0            # create_sample_pdf.py 生成示例 PDF
