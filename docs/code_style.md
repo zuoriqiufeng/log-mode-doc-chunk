@@ -31,9 +31,10 @@ from __future__ import annotations  # 始终第一
 
 ## 测试与验证
 
-- 当前没有测试套件。
+- 测试用 pytest，放在 `tests/`，文件名 `test_*.py`。
+- 只测不依赖外部服务的纯逻辑；涉及模型下载、Qdrant 实连、OCR/Vision 的部分靠手工冒烟（见 `docs/build.md` 的「验证」一节）。
+- 用例名用中文描述意图，例如 `test_large_chunks_carry_no_mini_chunks`。
 - 没有配置 linter/formatter。
-- 修改后通过针对样例文档运行 CLI 来验证。
 
 ## 通用原则
 

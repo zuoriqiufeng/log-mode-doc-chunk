@@ -340,7 +340,7 @@ python multi_doc_processor.py document.md output \
 ```yaml
 mode: local
 path: ./qdrant_data
-collection_name: test_doc_chunks
+collection_name: chunk_collection
 distance: cosine
 vector_size: 1536
 auto_create_collection: true

@@ -55,3 +55,5 @@
 | `web/frontend.py` | 前端静态服务 + 代理 | 58001 端口 |
 | `web/start.py` | 同时启动前后端 | — |
 | `web/static/` | SPA 静态资源 | `index.html`、`app.js`、`style.css` |
+| `tests/` | pytest 用例：模型、提取器、分块、日志模式、Qdrant 配置 | `conftest.py` 把项目根目录注入 `sys.path` |
+| `pytest.ini` | pytest 配置 | `testpaths = tests` |

@@ -47,6 +47,7 @@ from flask import Flask, jsonify, request, send_from_directory
 
 from extractors import EXTRACTOR_MAP
 from pipeline import process_document
+from vector_store.qdrant_config import DEFAULT_COLLECTION_NAME
 
 # ---------------------------------------------------------------------------
 # Flask 应用
@@ -286,7 +287,7 @@ def _load_qdrant_config_file() -> dict[str, Any]:
         "qdrant_host": "localhost",
         "qdrant_port": 6333,
         "qdrant_grpc_port": 6334,
-        "qdrant_collection_name": "test_doc_chunks",
+        "qdrant_collection_name": DEFAULT_COLLECTION_NAME,
         "qdrant_distance": "cosine",
         "qdrant_vector_size": 1536,
         "qdrant_api_key": "",
@@ -306,7 +307,7 @@ def _load_qdrant_config_file() -> dict[str, Any]:
         result["qdrant_host"] = raw.get("host", "localhost") or "localhost"
         result["qdrant_port"] = raw.get("port", 6333) or 6333
         result["qdrant_grpc_port"] = raw.get("grpc_port", 6334) or 6334
-        result["qdrant_collection_name"] = raw.get("collection_name", "test_doc_chunks")
+        result["qdrant_collection_name"] = raw.get("collection_name", DEFAULT_COLLECTION_NAME)
         result["qdrant_distance"] = raw.get("distance", "cosine")
         result["qdrant_vector_size"] = raw.get("vector_size", 1536)
         result["qdrant_api_key"] = raw.get("api_key") or ""
@@ -428,7 +429,7 @@ def _save_qdrant_config(config: dict[str, Any]) -> None:
             "grpc_port": config.get("qdrant_grpc_port", 6334),
             "api_key": config.get("qdrant_api_key") or None,
             "https": config.get("qdrant_https", False),
-            "collection_name": config.get("qdrant_collection_name", "test_doc_chunks"),
+            "collection_name": config.get("qdrant_collection_name", DEFAULT_COLLECTION_NAME),
             "distance": config.get("qdrant_distance", "cosine"),
             "vector_size": config.get("qdrant_vector_size", 1536),
             "auto_create_collection": True,
@@ -467,7 +468,7 @@ def _build_qdrant_config(config: dict[str, Any]):
         grpc_port=config.get("qdrant_grpc_port") if mode == "remote" else None,
         api_key=config.get("qdrant_api_key") or None if mode == "remote" else None,
         https=config.get("qdrant_https", False) if mode == "remote" else False,
-        collection_name=config.get("qdrant_collection_name", "test_doc_chunks"),
+        collection_name=config.get("qdrant_collection_name", DEFAULT_COLLECTION_NAME),
         distance=config.get("qdrant_distance", "cosine"),
         vector_size=config.get("qdrant_vector_size", 1536),
         auto_create_collection=True,

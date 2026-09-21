@@ -14,7 +14,9 @@ xlrd>=2.0                 # Excel (.xls)
 Pillow>=10.0              # 图片解码
 
 # ---- 分块 ----
-chonkie>=1.0              # token 级分块（标准 chunk / mini-chunk）
+# 已验证 1.6.8。注意：chunking/text.py 使用 SentenceChunker(approximate=...)，
+# 该参数已被上游标记废弃（升级前需先回归分块边界），故限制在大版本 2 以内
+chonkie>=1.0,<2.0
 
 # ---- 向量嵌入 ----
 openai>=1.0               # OpenAI 嵌入后端（text-embedding-3-*）

@@ -163,9 +163,14 @@ python import_log_patterns.py patterns.xlsx --collection log_patterns_collection
 - `DocAwareChunk` 在各阶段就地修改，不得覆盖上游阶段写入的字段。
 - 大 chunk 中不允许包含 mini-chunk（`Embedder` 会抛 `RuntimeError` 拦截）。
 - 日志模式必须写入独立 collection，不得与文档库混用。
-- 当前无自动化测试套件，验证方式为针对 `word/sample.*` 跑通 CLI 与 Web 流程。
+- 提交前运行测试：`pip install -r requirements-dev.txt && pytest`。
 
-## 已知待办
+## 测试
 
-- `tests/` 仅有目录占位，尚无测试用例。
-- 部分代码注释与默认 collection 名（`test_doc_chunks`）仍沿用项目旧名 `test_doc`，未与实际行为对齐。
+```bash
+pip install -r requirements-dev.txt
+pytest                      # 全部用例
+pytest tests/test_chunking.py -v
+```
+
+测试只覆盖不依赖外部服务的纯逻辑（数据模型、提取器、分块、日志模式解析、Qdrant 配置解析）；嵌入模型下载与 Qdrant 实连不在用例范围内，需要时应通过 mock 隔离。

@@ -104,14 +104,18 @@ python web/frontend.py     # 前端 58001
 
 ## 验证
 
-当前没有测试套件或 linter，验证方式：
-
 ```bash
-# 1. 分块链路（不依赖外部服务）
+# 1. 自动化用例（无需外部服务，约 1 秒）
+pip install -r requirements-dev.txt
+pytest
+
+# 2. 分块链路冒烟（不依赖嵌入与 Qdrant）
 python multi_doc_processor.py word/sample.md /tmp/chunk_out
 
-# 2. Web 服务健康检查
+# 3. Web 服务健康检查
 ./web/ctl.sh start && curl -sf http://localhost:58002/api/health
 ```
 
-`tests/` 目录目前只有空占位，尚无自动化用例。
+用例覆盖数据模型、各格式提取器、文本/大块分块、日志模式解析与分块、Qdrant 配置解析，
+以及 `process_document` 的端到端块编号一致性。**不覆盖**嵌入模型下载、Qdrant 实连、
+图片 OCR/Vision 与 Web 路由——这些需要外部服务，改动后请手工跑第 2、3 步。

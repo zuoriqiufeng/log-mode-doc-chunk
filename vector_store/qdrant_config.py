@@ -7,6 +7,10 @@ from dataclasses import dataclass
 
 import yaml
 
+# 未在 qdrant.yml / Web 配置中指定 collection_name 时使用的默认集合名。
+# 各调用方统一引用此常量，避免默认值在多处字面量中漂移。
+DEFAULT_COLLECTION_NAME = "chunk_collection"
+
 
 @dataclass
 class QdrantConfig:
@@ -26,7 +30,7 @@ class QdrantConfig:
     https: bool = False
 
     # Collection 配置
-    collection_name: str = "test_doc_chunks"
+    collection_name: str = DEFAULT_COLLECTION_NAME
     distance: str = "cosine"  # cosine | euclidean | dot
     vector_size: int = 1536
     auto_create_collection: bool = True
@@ -72,7 +76,7 @@ def load_qdrant_config(config_path: str | None = None) -> QdrantConfig:
         grpc_port=raw.get("grpc_port") if mode == "remote" else None,
         api_key=raw.get("api_key") if mode == "remote" else None,
         https=raw.get("https", False) if mode == "remote" else False,
-        collection_name=raw.get("collection_name", "test_doc_chunks"),
+        collection_name=raw.get("collection_name", DEFAULT_COLLECTION_NAME),
         distance=raw.get("distance", "cosine"),
         vector_size=raw.get("vector_size", 1536),
         auto_create_collection=raw.get("auto_create_collection", True),

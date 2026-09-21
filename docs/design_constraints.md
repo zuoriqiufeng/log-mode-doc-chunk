@@ -27,6 +27,25 @@ Qdrant 配置单独放在 `qdrant.yml` 中。
 - `BAAI/bge-large-zh-v1.5` → 1024 维
 - `text-embedding-3-small` → 1536 维
 
+## 默认 collection 名
+
+未在 `qdrant.yml` 或 Web 配置中指定时的兜底值，统一取自
+`vector_store/qdrant_config.py` 的 `DEFAULT_COLLECTION_NAME`（当前为 `chunk_collection`）。
+新增调用点时**引用该常量**，不要再写字符串字面量——历史上该默认值曾在 6 处副本中漂移。
+
+> 注意：本机 `qdrant_data/` 中已有的旧集合（`test_doc_chunks` 等）不受此常量影响，
+> 它们只在显式配置 `collection_name` 时才会被访问。旧数据要用就把名字写进 `qdrant.yml`。
+
+## 大 chunk 编号与 point id
+
+- Qdrant point id = `uuid5(f"{document_id}_{chunk_id}")`，因此 **`chunk_id` 必须在同一文档内全局唯一**。
+- `generate_large_chunks()` 返回的大 chunk，其 `chunk_id` 只是组内第一个成员的占位值；
+  真正编号由 `pipeline.py` 在合并后统一重分配（`lc.chunk_id = chunk_id`），重分配后
+  `large_chunk_id == chunk_id`（自指）。改这段逻辑时必须保证编号不重复，否则两个块会互相覆盖。
+- 大块的 `large_chunk_id` 是**自指**的，所以判断"某块是否被合并进大块"不能只看
+  `large_chunk_id is not None`，必须同时排除 `chunk_level == "large"`（`searcher.py` 用
+  `is_large_chunk` 先行分支来规避同一问题）。
+
 ## Qdrant Payload 一致性
 
 写入 Qdrant 的 chunk point 必须包含：

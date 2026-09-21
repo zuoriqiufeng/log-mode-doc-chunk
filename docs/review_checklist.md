@@ -52,7 +52,13 @@
 
 ## 安全
 
-- [ ] `.env` 中的 `OPENAI_API_KEY` 是否被意外提交？
+- [ ] `.env` 是否被意外提交？（`.gitignore` 已排除，提交前用 `git status` 再确认一次）
+- [ ] 文档/注释中是否残留开发机绝对路径或内部密钥？
+
+## 测试
+
+- [ ] `pytest` 是否全绿？（`pip install -r requirements-dev.txt` 后运行）
+- [ ] 改动若触及分块边界、payload 结构或默认 collection，是否补了相应用例？
 
 ## Enrichment
 

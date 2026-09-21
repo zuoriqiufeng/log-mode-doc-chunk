@@ -47,7 +47,7 @@ def generate_large_chunks(
     large_chunks: list[DocAwareChunk] = []
     large_chunk_id = chunk_id_start
 
-    # 只取非 large chunk 的标准 chunk（文本 + 表格）进行合并
+    # 合并对象是所有非 large chunk（文本、图片、表格块都在内），不是只有文本+表格
     eligible = [c for c in chunks if not c.is_large_chunk]
 
     for i in range(0, len(eligible), ratio):

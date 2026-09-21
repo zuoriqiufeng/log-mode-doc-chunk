@@ -60,7 +60,7 @@ Data flows in one direction through `pipeline.py`, with each stage mutating a li
 - For `.env` and `qdrant.yml` details, see `docs/config_reference.md`.
 - For Web UI/API details, see `docs/web.md`.
 - For coding conventions, see `docs/code_style.md`.
-- Before committing, run through `docs/review_checklist.md`.
+- Before committing, run `pytest`（`pip install -r requirements-dev.txt`）and run through `docs/review_checklist.md`.
 
 ## Collaboration Rules
 

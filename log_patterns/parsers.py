@@ -60,6 +60,10 @@ def _normalize_record(raw: dict[str, Any]) -> dict[str, Any]:
         standard_key = alias_to_standard.get(key.lower().strip())
         if not standard_key:
             standard_key = key.strip()
+        # 多个别名列可能指向同一标准字段（如 fix 与 solution 都映射到 remediation）。
+        # 后出现的空值不覆盖前面已填入的内容，否则一列留空就会丢掉另一列的数据。
+        if standard_key in normalized and value in (None, "", [], {}):
+            continue
         normalized[standard_key] = value
 
     # 将逗号/分号/竖线分隔的字符串转换为列表

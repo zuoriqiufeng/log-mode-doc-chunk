@@ -1,0 +1,5 @@
+# 开发依赖（仅本地测试 / 调试需要，运行项目本身不需要）
+# 安装: pip install -r requirements-dev.txt
+-r requirements.txt
+
+pytest>=8.0
