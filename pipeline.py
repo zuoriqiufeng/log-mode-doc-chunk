@@ -185,12 +185,15 @@ def process_document(
             image_processed_texts.append(results[img_idx])
             image_file_ids.append(img_path)
 
-    # 3. 检测表格
+    # 3. 检测表格；并从正文中精确移除表格内容（consumed_lines 是写入 CSV
+    #    的单元格原文，见 utils.detect_and_parse_table），避免同一内容同时
+    #    进入文本块与表格块
     table_result = detect_and_parse_table(text)
     table_sections: list[Section] = []
 
+    text_without_table = text
     if table_result:
-        heading, csv_text = table_result
+        heading, csv_text, consumed_lines = table_result
         print(f"\n[2] 检测到表格: '{heading}'")
         print(f"    CSV 行数: {len(csv_text.strip().splitlines())}")
         table_sections.append(
@@ -201,18 +204,11 @@ def process_document(
             )
         )
 
-    # 4. 构建文本段落
-    text_without_table = text
-    if table_result:
-        heading, csv_text = table_result
-        table_lines_set = set(line.strip() for line in csv_text.strip().splitlines())
-        remaining_lines = []
-        for line in text.splitlines():
-            stripped = line.strip()
-            if stripped in table_lines_set or stripped == heading:
-                continue
-            remaining_lines.append(line)
-        text_without_table = "\n".join(remaining_lines)
+        consumed = set(consumed_lines)
+        consumed.add(heading.strip())
+        text_without_table = "\n".join(
+            line for line in text.splitlines() if line.strip() not in consumed
+        )
 
     text_sections = _build_interleaved_body_sections(
         text_without_table,
@@ -234,8 +230,8 @@ def process_document(
         else:
             print(f"\n[4.5] 预富化: 未检测到符号串")
 
-    # 5. 构建 Document
-    all_sections = text_sections + image_sections + table_sections
+    # 5. 构建 Document（IMAGE Section 已含在 text_sections 中，勿重复拼接）
+    all_sections = text_sections + table_sections
     document = Document(
         id=file_path,
         semantic_identifier=file_path,
@@ -248,7 +244,7 @@ def process_document(
     print(f"    ID: {document.id}")
     print(f"    标题: {document.title}")
     print(f"    总段落数: {len(document.sections)}")
-    print(f"      - 文本段落: {len(text_sections)}")
+    print(f"      - 文本段落: {len(text_sections) - len(image_sections)}")
     print(f"      - 图片段落: {len(image_sections)}")
     print(f"      - 表格段落: {len(table_sections)}")
 

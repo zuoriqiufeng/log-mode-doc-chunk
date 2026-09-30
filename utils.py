@@ -102,8 +102,17 @@ def extract_blurb(text: str, max_chars: int = 150) -> str:
     return truncated + "..."
 
 
-def detect_and_parse_table(text: str) -> tuple[str, str] | None:
-    """从文本中启发式检测表格区域并解析为 CSV"""
+def detect_and_parse_table(text: str) -> tuple[str, str, list[str]] | None:
+    """从文本中启发式检测表格区域并解析为 CSV。
+
+    返回 (heading, csv_text, consumed_lines)。consumed_lines 是实际写入
+    CSV 的单元格原文（已 strip、保持重复；未凑成完整行的尾部零头不在其中，
+    避免调用方把正文里唯一一份副本删掉）。调用方可用它把表格内容从正文
+    中精确移除，避免同一内容同时进入文本块与表格块。
+
+    已知取舍：正文散文行恰好等于某单元格文本时会被误删——分块前的文本
+    多为合并后的长段落，实际碰撞概率极低。
+    """
     lines = text.splitlines()
 
     table_start = -1
@@ -156,10 +165,12 @@ def detect_and_parse_table(text: str) -> tuple[str, str] | None:
     if not csv_lines:
         return None
 
+    consumed_lines = [cell for row in csv_lines for cell in row]
+
     output = io.StringIO()
     writer = csv.writer(output)
     writer.writerows(csv_lines)
-    return heading, output.getvalue()
+    return heading, output.getvalue(), consumed_lines
 
 
 def save_results(

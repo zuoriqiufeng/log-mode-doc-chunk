@@ -340,3 +340,31 @@ class TestProcessDocumentIntegration:
         for lc in (c for c in chunks if c.chunk_level == "large"):
             for child_id in lc.large_chunk_reference_ids:
                 assert by_id[child_id].content in lc.content
+
+    def test_表格行从正文去重不再进入文本块(self, sample_file, tmp_path):
+        """修复前：删除逻辑用「原始行 == CSV 行」全等匹配，单元格一行一个的
+        PDF 一行都删不掉，表格内容同时出现在文本块与表格块里。"""
+        from pipeline import process_document
+
+        _, chunks, _ = process_document(
+            sample_file("sample.pdf"),
+            str(tmp_path / "out"),
+            enable_large_chunks=False,
+            enable_contextual_rag=False,
+            enable_embedding=False,
+            enable_vector_store=False,
+            enable_image_processing=False,
+        )
+
+        text_content = "\n".join(
+            c.content
+            for c in chunks
+            if c.section_type == SectionType.TEXT and not c.is_large_chunk
+        )
+        tabular_content = "\n".join(
+            c.content for c in chunks if c.section_type == SectionType.TABULAR
+        )
+
+        assert "Google Drive" in tabular_content, "表格块应保留单元格内容"
+        assert "Google Drive" not in text_content, "单元格不应再重复出现在文本块里"
+        assert "OAuth 2.0 Service Account" not in text_content

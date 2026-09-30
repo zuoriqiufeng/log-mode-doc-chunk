@@ -13,7 +13,7 @@
 | `multi_doc_processor.py` | CLI 入口 | argparse → `process_document()` → `save_results()` |
 | `enrichment.py` | BGE 预富化：符号串检测 + 语义锚点标注 | `detect_annotations()`、`enrich_document_text()`、`Annotation` |
 | `extractors/` | 按格式提取文本/元数据/图片 | `DocumentExtractor` ABC → `EXTRACTOR_MAP` 分派 |
-| `extractors/pdf.py` | PDF 提取 | `PdfExtractor` |
+| `extractors/pdf.py` | PDF 提取：页内折行重排（防接缝切句）、图片占位符（页尾、独立成段） | `PdfExtractor`、`_reflow_page_text()`、`_table_zone()` |
 | `extractors/docx.py` | DOCX 提取：文本、表格、内嵌图片占位符 | `DocxExtractor` |
 | `extractors/doc.py` | 旧版 DOC 提取 | `DocExtractor` |
 | `extractors/html.py` | HTML 清理提取 | `HtmlExtractor` |
@@ -47,7 +47,7 @@
 | `log_patterns/importer.py` | 解析 → 分块 → 嵌入 → 入库编排 | `import_log_patterns()`、`import_log_patterns_from_data()` |
 | `log_patterns/cli.py` | 日志模式导入 CLI | `python -m log_patterns.cli` |
 | `import_log_patterns.py` | 顶层便捷入口 | 等价于 `python -m log_patterns.cli` |
-| `utils.py` | 工具函数：保存结果、表格检测、ZIP 解压、文本清理 | `save_results()`、`detect_and_parse_table()`、`safe_extract_zip()`、`clean_text()` |
+| `utils.py` | 工具函数：保存结果、表格检测（返回 `consumed_lines` 供正文按行精确去重）、ZIP 解压、文本清理 | `save_results()`、`detect_and_parse_table()`、`safe_extract_zip()`、`clean_text()` |
 | `query.py` | 独立查询 CLI | `Searcher.search()` |
 | `docs/query/chunk-aware-search-strategy.md` | 查询策略设计文档 | — |
 | `docs/qdrant-test-im-chunks-audit.md` | Qdrant 实测报告 | — |
