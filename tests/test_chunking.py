@@ -8,12 +8,15 @@
 
 from __future__ import annotations
 
+import re
+
 import pytest
 
 from chunking.large import generate_large_chunks
 from chunking.text import (
     chunk_text_sections,
     get_mini_chunk_texts,
+    hard_split,
     split_mini_chunks,
 )
 from models import DocAwareChunk, Document, Section, SectionType
@@ -82,6 +85,122 @@ class TestSplitMiniChunks:
         assert get_mini_chunk_texts(LONG_TEXT, mini_splitter) == split_mini_chunks(
             LONG_TEXT, mini_splitter
         )[0]
+
+
+class TestHardSplit:
+    """片长硬上限兜底：分隔符优先、token 安全、连续切片不变量。"""
+
+    @staticmethod
+    def _assert_contiguous(text: str, pieces: list[str], offsets) -> None:
+        assert "".join(pieces) == text
+        for piece, (s, e) in zip(pieces, offsets):
+            assert text[s:e] == piece
+
+    def test_错误码清单按条目边界切且无丢失(self):
+        # chunk16 的实际形态：错误码清单，条目以 ", " 分隔
+        text = "错误码 -4011 (IAERR_STOPPED), 错误码 -4018 (IAERR_CONF), " * 120
+        pieces, offsets = hard_split(text, 600)
+
+        assert all(len(p) <= 600 for p in pieces)
+        self._assert_contiguous(text, pieces, offsets)
+        pattern = r"(?<![0-9])-[0-9]{4}(?![0-9])"
+        assert set(re.findall(pattern, text)) == set(
+            re.findall(pattern, "".join(pieces))
+        ), "错误码不得被切断"
+
+    def test_空格分隔的长ID串切在空格处(self):
+        # token 周期 13 字符，不整除 600：无兜底时必然拦腰切断
+        text = " ".join(f"CODE-{i:04d}-XY" for i in range(400))
+        pieces, offsets = hard_split(text, 600)
+
+        assert all(len(p) <= 600 for p in pieces)
+        self._assert_contiguous(text, pieces, offsets)
+        pattern = r"(?<![A-Za-z0-9_\-])CODE-[0-9]{4}-XY(?![A-Za-z0-9_\-])"
+        assert set(re.findall(pattern, text)) == set(
+            re.findall(pattern, "".join(pieces))
+        ), "token 不得被切断"
+
+    def test_无分隔符时兜底回退到token边界(self):
+        # 中文文字与 token 交错、无任何分隔符：字符兜底必须回退到 token 边界
+        text = "".join(f"错误码-{i:04d}-IAERR_ERR" for i in range(200))
+        pieces, offsets = hard_split(text, 600)
+
+        assert all(len(p) <= 600 for p in pieces)
+        self._assert_contiguous(text, pieces, offsets)
+        pattern = r"(?<![0-9])-[0-9]{4}(?![0-9])"
+        assert set(re.findall(pattern, text)) == set(
+            re.findall(pattern, "".join(pieces))
+        ), "回退未生效，token 被切断"
+
+    def test_单token长于上限时直切(self):
+        # 退无可退：无法在不切断 token 的前提下满足上限，按上限直切
+        text = "A" * 1500
+        pieces, offsets = hard_split(text, 600)
+
+        assert [len(p) for p in pieces] == [600, 600, 300]
+        self._assert_contiguous(text, pieces, offsets)
+
+    def test_窗口首字符是分隔符时不产生单字符片(self):
+        text = " " + "x" * 1500
+        pieces, offsets = hard_split(text, 600)
+
+        assert all(1 < len(p) <= 600 for p in pieces)
+        self._assert_contiguous(text, pieces, offsets)
+
+    def test_正常短文本原样单片(self):
+        text = "一段正常长度的文本，不触发任何兜底。"
+        pieces, offsets = hard_split(text, 600)
+        assert pieces == [text]
+        assert offsets == [(0, len(text))]
+
+    def test_空文本与非法上限(self):
+        assert hard_split("", 600) == ([], [])
+        with pytest.raises(ValueError):
+            hard_split("abc", 0)
+
+
+class TestDegenerateSplitting:
+    """接入点（chunk_text_sections / split_mini_chunks）对退化片的兜底。"""
+
+    def test_零分隔符长文本全片不超限且mini数达标(self):
+        # "错误码 -XXXX (NAME), " 形态，无句末标点/换行：chonkie 会退化为单片独大
+        degenerate = "错误码 -4011 (IAERR_STOPPED), 错误码 -4018 (IAERR_CONF), " * 230
+        assert len(degenerate) > 11700
+        document = _make_document([Section(type=SectionType.TEXT, text=degenerate)])
+        chunks = chunk_text_sections(document.sections, document)
+
+        assert all(len(c.content) <= 2048 for c in chunks), "标准片超限"
+        assert "".join(c.content for c in chunks) == degenerate, "标准片必须是连续切片"
+
+        mini_total = 0
+        for c in chunks:
+            for i, mt in enumerate(c.mini_chunk_texts or []):
+                assert len(mt) <= 600
+                start, end = c.mini_chunk_offsets[i]
+                assert c.content[start:end] == mt, "mini 必须能精确映射回父块"
+                mini_total += 1
+        assert mini_total >= 20, "ceil(11730/600) = 20，兜底后 mini 片数不得少于下界"
+
+    def test_单句超限的mini被切开(self):
+        text = "这是一条没有句末标点的超长单句" + "内容" * 730
+        document = _make_document([Section(type=SectionType.TEXT, text=text)])
+        chunks = chunk_text_sections(document.sections, document)
+
+        assert any(c.mini_chunk_texts for c in chunks)
+        for c in chunks:
+            for mt in c.mini_chunk_texts or []:
+                assert len(mt) <= 600
+
+    def test_正常块切分结果与旧路径逐字节一致(self, mini_splitter):
+        """等价性守卫：正常块（句子/段落边界完整）不应因兜底产生任何差异。"""
+        document = _make_document([Section(type=SectionType.TEXT, text=LONG_TEXT)])
+        chunks = chunk_text_sections(document.sections, document)
+
+        for c in chunks:
+            old = split_mini_chunks(c.content, mini_splitter)  # 无上限 = 旧行为
+            new = split_mini_chunks(c.content, mini_splitter, mini_max_chars=600)
+            assert new == old, "正常块的 mini 文本与 offsets 必须逐字节不变"
+            assert get_mini_chunk_texts(c.content, mini_splitter) == c.mini_chunk_texts
 
 
 class TestChunkTextSections:
@@ -368,3 +487,38 @@ class TestProcessDocumentIntegration:
         assert "Google Drive" in tabular_content, "表格块应保留单元格内容"
         assert "Google Drive" not in text_content, "单元格不应再重复出现在文本块里"
         assert "OAuth 2.0 Service Account" not in text_content
+
+    def test_退化输入的哨兵检查零告警(self, tmp_path, capsys, monkeypatch):
+        """硬切兜底接入后，退化输入应通过片长检查（哨兵被调用且无发现）。"""
+        import pipeline as pipeline_module
+        from pipeline import process_document
+
+        source = tmp_path / "degenerate.md"
+        source.write_text(
+            "错误码 -4011 (IAERR_STOPPED), 错误码 -4018 (IAERR_CONF), " * 230,
+            encoding="utf-8",
+        )
+
+        calls = []
+        original = pipeline_module.check_chunk_limits
+
+        def spy(chunks, standard_max_chars, mini_max_chars, strict=False):
+            result = original(chunks, standard_max_chars, mini_max_chars, strict)
+            calls.append(result)
+            return result
+
+        monkeypatch.setattr(pipeline_module, "check_chunk_limits", spy)
+        process_document(
+            str(source),
+            str(tmp_path / "out"),
+            enable_large_chunks=False,
+            enable_contextual_rag=False,
+            enable_embedding=False,
+            enable_vector_store=False,
+            enable_image_processing=False,
+        )
+
+        assert calls, "退化哨兵应被调用"
+        oversize, oversize_minis = calls[0]
+        assert oversize == [] and oversize_minis == []
+        assert "[退化哨兵]" not in capsys.readouterr().out

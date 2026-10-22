@@ -12,6 +12,18 @@ Pipeline 阶段只能向前传递数据，后面阶段不能反向依赖前面�
 
 `Embedder` 会以 `RuntimeError` 强制保证大 chunk 不包含 mini-chunk。
 
+## 分块片长硬上限
+
+- 标准片上限 = `chunk_token_limit * 4`、mini 片上限 = `mini_chunk_size * 4`（默认 2048 / 600 字符）。
+- chonkie `SentenceChunker` 只在句子边界合并、无"单句超长硬切"，整块无分隔符时会退化为单片独大；
+  `chunking/text.py: hard_split()` 对其产物兜底（优先 `HARD_SPLIT_SEPS`，字符兜底时切点避开
+  `[A-Za-z0-9_-]` 串内部），**仅超限片触发、正常片切分结果逐字节不变**。
+- 所有片必须是原文的**连续切片**（`text[start:end] == piece`）——`split_mini_chunks` 的 offsets
+  依赖 `find()` 顺序定位。
+- 退化哨兵：`process_document` 在 chunk 组装完成后调用 `utils.check_chunk_limits()`，有发现时打印
+  `[退化哨兵]` 告警；`CHUNK_STRICT=1` 时抛 `RuntimeError`（CI/重灌专用）。
+- 审计：`audit_chunk_degeneration.py` 扫 Qdrant 输出三项指标（超长标准块 / 超限 mini / 退化块清单），重灌后应全零。
+
 ## 配置优先级
 
 ```

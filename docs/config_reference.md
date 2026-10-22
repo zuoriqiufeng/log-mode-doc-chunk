@@ -15,6 +15,7 @@
 | `MINI_CHUNK_SIZE` | mini-chunk token 上限 |
 | `ENABLE_LARGE_CHUNKS` | 是否启用大 chunk |
 | `LARGE_CHUNK_RATIO` | 大 chunk 合并比例 |
+| `CHUNK_STRICT` | 退化哨兵：检测到超长标准块/超限 mini 时是否 fail（默认仅告警；CI/重灌专用） |
 | `ENABLE_CONTEXTUAL_RAG` | 是否启用 Contextual RAG |
 | `USE_LLM` | 是否使用 LLM 生成上下文 |
 | `ENABLE_ENRICHMENT` | 是否启用 BGE 预富化 |

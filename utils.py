@@ -173,6 +173,58 @@ def detect_and_parse_table(text: str) -> tuple[str, str, list[str]] | None:
     return heading, output.getvalue(), consumed_lines
 
 
+def check_chunk_limits(
+    chunks: list[DocAwareChunk],
+    standard_max_chars: int,
+    mini_max_chars: int,
+    strict: bool = False,
+) -> tuple[list[DocAwareChunk], list[tuple[DocAwareChunk, int, int]]]:
+    """退化哨兵：复核片长硬上限是否被违反（hard_split 兜底后的防回归）。
+
+    返回 (oversize_chunks, oversize_minis)：
+    - oversize_chunks：非 large 块中 content 超过 standard_max_chars 的
+      （含图片/表格块——它们的 content 不走 hard_split，超限同样值得暴露）；
+      large 块按设计合并多个块、天然超长，不在此列。
+    - oversize_minis：(chunk, mini_index, length)：mini 片长超过 mini_max_chars 的。
+
+    有发现时打印告警清单；strict=True 时抛 RuntimeError（CHUNK_STRICT=1，CI/重灌专用）。
+    """
+    oversize_chunks = [
+        c for c in chunks if not c.is_large_chunk and len(c.content) > standard_max_chars
+    ]
+    oversize_minis: list[tuple[DocAwareChunk, int, int]] = []
+    for c in chunks:
+        for i, mini in enumerate(c.mini_chunk_texts or []):
+            if len(mini) > mini_max_chars:
+                oversize_minis.append((c, i, len(mini)))
+
+    if oversize_chunks or oversize_minis:
+        by_level: dict[str, int] = {}
+        for c in oversize_chunks:
+            by_level[c.chunk_level] = by_level.get(c.chunk_level, 0) + 1
+        level_desc = "、".join(f"{k} {v} 个" for k, v in sorted(by_level.items()))
+        level_suffix = f"（{level_desc}）" if level_desc else ""
+        print(
+            f"\n[退化哨兵] 超长标准块 {len(oversize_chunks)} 个{level_suffix}，"
+            f"超限 mini 片 {len(oversize_minis)} 个"
+        )
+        for c in oversize_chunks[:5]:
+            print(
+                f"    - {c.source_document.id}#{c.chunk_id} "
+                f"len={len(c.content)} level={c.chunk_level}"
+            )
+        for c, i, n in oversize_minis[:5]:
+            print(f"    - {c.source_document.id}#{c.chunk_id} mini[{i}] len={n}")
+
+        if strict:
+            raise RuntimeError(
+                f"分块退化检查未通过：超长标准块 {len(oversize_chunks)} 个、"
+                f"超限 mini 片 {len(oversize_minis)} 个（CHUNK_STRICT=1）"
+            )
+
+    return oversize_chunks, oversize_minis
+
+
 def save_results(
     chunks: list[DocAwareChunk],
     images: list[tuple[bytes, str]],

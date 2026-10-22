@@ -3,7 +3,12 @@
 from chunking.image import chunk_image_section
 from chunking.large import generate_large_chunks
 from chunking.tabular import chunk_tabular_section, format_row, parse_csv_string
-from chunking.text import chunk_text_sections, get_mini_chunk_texts, split_mini_chunks
+from chunking.text import (
+    hard_split,
+    chunk_text_sections,
+    get_mini_chunk_texts,
+    split_mini_chunks,
+)
 
 __all__ = [
     "chunk_image_section",
@@ -12,6 +17,7 @@ __all__ = [
     "format_row",
     "generate_large_chunks",
     "get_mini_chunk_texts",
+    "hard_split",
     "parse_csv_string",
     "split_mini_chunks",
 ]

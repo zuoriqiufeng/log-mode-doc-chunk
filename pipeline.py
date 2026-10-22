@@ -22,7 +22,7 @@ from image_processing import (
     create_image_processor,
 )
 from models import DocAwareChunk, Document, IndexChunk, Section, SectionType
-from utils import detect_and_parse_table
+from utils import check_chunk_limits, detect_and_parse_table
 from vector_store import create_vector_store
 
 
@@ -291,6 +291,15 @@ def process_document(
                 lc.chunk_id = chunk_id
                 all_chunks.append(lc)
                 chunk_id += 1
+
+    # 7.5. 退化哨兵：片长硬上限复核（hard_split 兜底后的防回归；
+    # CHUNK_STRICT=1 时直接 fail，CI/重灌专用）
+    check_chunk_limits(
+        all_chunks,
+        standard_max_chars=chunk_token_limit * 4,
+        mini_max_chars=mini_chunk_size * 4,
+        strict=os.environ.get("CHUNK_STRICT", "").lower() in ("true", "1", "yes"),
+    )
 
     # Mini-chunk 统计
     total_mini = sum(
