@@ -173,7 +173,7 @@ output/
 | `large` | ✅ | 富化长文本（4 块拼接后的整段） | `is_large_chunk=True`、双向指针、**永不带 mini** |
 | `image` | ✅ | 富化长文本（OCR/描述或占位说明） | `image_file_id` 指向本地图片 |
 | `tabular` | ✅ | 富化长文本（`Columns:` + `k=v` 行） | 表格**每行**一块，`section_type=tabular` |
-| `log_pattern_standard` | ✅ | 富化长文本（`pattern.full_text()`） | **独立 collection** + 12 字段结构化 `custom_payload` |
+| `log_pattern_standard` | ✅ | 富化长文本（`pattern.full_text()`） | **独立 collection** + 13 字段结构化 `custom_payload` |
 
 ---
 
@@ -268,13 +268,14 @@ DocAwareChunk(
     content  = pattern.full_text(),                # 模式描述全文
     blurb    = pattern.fingerprint_text[:150],
     chunk_level = "log_pattern_standard",          # ★第 6 个枚举值
-    mini_chunk_texts   = pattern.mini_texts(),     # 2~4 条（指纹/样本粒度）
+    mini_chunk_texts   = pattern.mini_texts(),     # 2~4 条（指纹+日志原文/根因/处置/症状）
     mini_chunk_offsets = [],                       # 无偏移（非文本切分而来）
-    custom_payload = {                             # ★12 字段结构化，见 §6.3-B
+    custom_payload = {                             # ★13 字段结构化，见 §6.3-B
         "is_log_pattern": True, "pattern_id": "P001",
         "log_fingerprint": ["IAERR_LOG_SEQ", "4002"],   # string[] 保持数组
-        "component": "i2Stream", "severity": "ERROR",
-        "error_codes": ["-4002"], "db_types": ["Oracle"],
+        "component": "iatrack", "severity": "high",
+        "error_codes": ["-4002"], "db_types": ["oracle"],
+        "target_types": ["doris"], "dimension": "consistency",
         "keywords": ["IAERR_LOG_SEQ", "4002"],          # = log_fingerprint，复用兜底
         "source_note": "...", "updated_at": "...", "chunk_type": "standard",
     },
@@ -298,7 +299,7 @@ DocAwareChunk(
 | `large` | `chunking/large.py: generate_large_chunks()` — 每 `ratio=4` 个非 large chunk 合并（组内仅 1 个则不合并） | 是（主 point） | `is_large_chunk=True`、`large_chunk_reference_ids`、`large_chunk_id`（= 自身 chunk_id 自指）；**不含** mini | 同上 |
 | `image` | `chunking/image.py: chunk_image_section()` — 每张提取图片 1 块 | 是（主 point） | `section_type=image`、`image_file_id`（本地图片路径） | 同上 |
 | `tabular` | `chunking/tabular.py: chunk_tabular_section()` — 表格**每行** 1 块 | 是（主 point） | `section_type=tabular`；content = 表头 + `k=v` 行（可带 heading） | 同上 |
-| `log_pattern_standard` | `log_patterns/chunker.py: LogPatternChunker.chunk()` — 每条日志模式 1 块 + 2~4 个 mini | 是（主 point） | `custom_payload` 结构化 12 字段（见 §6.3）；mini 的 `chunk_level` 仍为 `"mini"` | `log_patterns_collection`（独立，禁止混入文档 collection） |
+| `log_pattern_standard` | `log_patterns/chunker.py: LogPatternChunker.chunk()` — 每条日志模式 1 块 + 2~4 个 mini | 是（主 point） | `custom_payload` 结构化 13 字段（见 §6.3）；mini 的 `chunk_level` 仍为 `"mini"` | `log_patterns_collection`（独立，禁止混入文档 collection） |
 
 **父子/双向指针关系**：
 
@@ -401,7 +402,7 @@ DocAwareChunk(
 
 | 字段 | 类型 | 默认 | 含义 | 写入方 |
 |---|---|---|---|---|
-| `custom_payload` | `dict` | `{}` | 合并进主 point payload 的任意键值。两套既有使用：富化 `keywords`/`data_types`（pipeline `[4.6]`）；日志模式结构化 12 字段（`log_patterns/payload.py`） | `[4.6]`、`LogPatternChunker` |
+| `custom_payload` | `dict` | `{}` | 合并进主 point payload 的任意键值。两套既有使用：富化 `keywords`/`data_types`（pipeline `[4.6]`）；日志模式结构化 13 字段（`log_patterns/payload.py`） | `[4.6]`、`LogPatternChunker` |
 | `mini_chunk_payloads` | `list[dict] \| None` | `None` | 与 `mini_chunk_texts` 下标对齐的逐 mini payload；无标注的 mini 为 `{}` | `[4.6]`、`LogPatternChunker` |
 
 ### 3.7 遗留/低频字段
@@ -509,9 +510,13 @@ mini point **不写** `keywords`/`data_types` 默认占位——字段仅在 `mi
 | `log_fingerprint` | 模板指纹（`string[]`，必须保持数组类型） |
 | `component` / `severity` | 组件 / 级别 |
 | `error_codes` / `db_types` | 错误码列表 / 数据库类型列表 |
+| `target_types` | 目标端类型列表（`string[]`，检索侧透传字段） |
+| `dimension` | 语义维度（检索侧透传字段） |
 | `keywords` | **= `log_fingerprint`**（复用 keywords 兜底通路） |
 | `source_note` / `updated_at` | 来源备注 / 更新时间 |
 | `chunk_type` | `"standard"` 或 `"mini"`（mini 另带 `mini_content_preview` 前 100 字） |
+
+透传口径以检索侧 `PATTERN_META_KEYS` 为准；`grade` / `counter_evidence` / `log_samples` / `symptom` / `root_cause` / `remediation` 仅嵌入全文，不进 payload。
 
 ### 6.4 payload 索引现状
 

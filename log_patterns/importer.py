@@ -97,6 +97,7 @@ def import_log_patterns(
     # 校验
     validation_errors: list[dict[str, Any]] = []
     valid_patterns: list[LogPattern] = []
+    unrecognized_fields: dict[str, list[str]] = {}
     for pattern in patterns:
         errors = pattern.validate()
         if errors:
@@ -105,6 +106,9 @@ def import_log_patterns(
             )
         else:
             valid_patterns.append(pattern)
+        extra = pattern.metadata.get("unrecognized") if pattern.metadata else None
+        if extra:
+            unrecognized_fields[pattern.pattern_id] = sorted(extra)
 
     # 2. 分块
     chunker = LogPatternChunker(document_id_prefix=document_id_prefix)
@@ -120,6 +124,7 @@ def import_log_patterns(
         "mini_chunks": sum(len(c.mini_chunk_texts or []) for c in chunks),
         "collection": _resolve_collection_name(collection_name, qdrant_config_path),
         "validation_errors": validation_errors,
+        "unrecognized_fields": unrecognized_fields,
         "dry_run": dry_run,
     }
 

@@ -10,6 +10,11 @@ from log_patterns.models import LogPattern
 def build_pattern_payload(pattern: LogPattern, chunk_type: str) -> dict[str, Any]:
     """为 standard 或 mini chunk 构建 payload。
 
+    透传口径与 i2stream-bkn/plugin/bm25.py::PATTERN_META_KEYS 对齐：
+    pattern_id / log_fingerprint / component / severity / error_codes /
+    db_types / target_types / source_note / dimension。
+    其余字段（symptom/root_cause/remediation/grade 等）仅落库留档，检索侧不回传。
+
     Args:
         pattern: 日志模式对象
         chunk_type: "standard" 或 "mini"
@@ -22,6 +27,8 @@ def build_pattern_payload(pattern: LogPattern, chunk_type: str) -> dict[str, Any
         "severity": pattern.severity,
         "error_codes": pattern.error_codes,
         "db_types": pattern.db_types,
+        "target_types": pattern.target_types,
+        "dimension": pattern.dimension,
         "keywords": pattern.log_fingerprint,
         "source_note": pattern.source_note,
         "updated_at": pattern.updated_at,

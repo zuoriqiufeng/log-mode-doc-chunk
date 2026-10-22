@@ -43,11 +43,11 @@ Qdrant log_patterns_collection (payload 含 is_log_pattern + 模式专有字段)
 ```
 
 - 每条模式 = 1 个 standard chunk（`chunk_level=log_pattern_standard`）+ 2~4 个 mini chunk：
-  - mini-1：日志特征指纹（`log_fingerprint` + component + error_codes 拼接）
+  - mini-1：日志特征指纹 + 真实日志原文（`log_fingerprint` + component + error_codes 拼接，再拼 `log_samples`）
   - mini-2：根因 root_cause
   - mini-3：处置 remediation 摘要
-  - mini-4（可选）：症状 symptom + 误判提示 false_positive
-- standard chunk 的 `custom_payload` 携带模式专有字段（pattern_id / log_fingerprint / component / severity / error_codes / db_types / source_note / updated_at / is_log_pattern=true），由 `QdrantVectorStore.upsert_chunks()` 合并进 point payload
+  - mini-4（可选）：症状 symptom + 误判提示 false_positive + 反证 counter_evidence
+- standard chunk 的 `custom_payload` 携带模式专有字段（pattern_id / log_fingerprint / component / severity / error_codes / db_types / target_types / dimension / source_note / updated_at / is_log_pattern=true），由 `QdrantVectorStore.upsert_chunks()` 合并进 point payload；其中透传字段口径与检索侧 `PATTERN_META_KEYS` 对齐
 - mini chunk 的 `mini_chunk_payloads[i]` 与 `mini_chunk_texts[i]` 一一对应
 - 目标 collection 独立（默认 `log_patterns_collection`），不复用文档库 collection；通过显式参数或 `LOG_PATTERN_COLLECTION_NAME` 覆盖
 - 幂等写入：`document_id = log_pattern_{pattern_id}`，同 pattern_id 重复导入覆盖旧 point

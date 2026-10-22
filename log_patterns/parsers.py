@@ -31,6 +31,11 @@ _FIELD_ALIASES: dict[str, list[str]] = {
     "remediation": ["remediation", "remediations", "fix", "fixes", "solution"],
     "error_codes": ["error_codes", "errorCodes", "error_code", "codes"],
     "db_types": ["db_types", "dbTypes", "db_type", "databases"],
+    "target_types": ["target_types", "targetTypes", "target_type", "targets"],
+    "dimension": ["dimension", "dimensions", "dim"],
+    "grade": ["grade", "confidence"],
+    "counter_evidence": ["counter_evidence", "counterEvidence", "counter"],
+    "log_samples": ["log_samples", "logSamples", "log_sample", "samples"],
     "false_positive": ["false_positive", "falsePositive", "false_positives"],
     "source_note": ["source_note", "sourceNote", "source", "note"],
     "updated_at": ["updated_at", "updatedAt", "updated", "update_time"],
@@ -44,6 +49,18 @@ _LIST_FIELDS = {
     "remediation",
     "error_codes",
     "db_types",
+    "target_types",
+    "log_samples",
+}
+
+
+# component 历史别名 -> v2.1 规范名
+_COMPONENT_ALIASES = {
+    "loader": "ialoader",
+    "track": "iatrack",
+    "monitor": "iamonitor",
+    "diff": "iadiff",
+    "dumper": "iadumper",
 }
 
 
@@ -81,20 +98,33 @@ def _normalize_record(raw: dict[str, Any]) -> dict[str, Any]:
 def _record_to_pattern(record: dict[str, Any]) -> LogPattern:
     """将标准化记录转换为 LogPattern。"""
     norm = _normalize_record(record)
+    metadata = dict(norm.get("metadata") or {})
+    # 未识别的键不静默丢弃：收进 metadata["unrecognized"] 留档，importer 会汇总上报
+    known = set(_FIELD_ALIASES) - {"metadata"}
+    unrecognized = {k: v for k, v in norm.items() if k not in known}
+    if unrecognized:
+        metadata.setdefault("unrecognized", {}).update(unrecognized)
+    component = str(norm.get("component", ""))
+    component = _COMPONENT_ALIASES.get(component.strip().lower(), component)
     return LogPattern(
         pattern_id=str(norm.get("pattern_id", "")),
         log_fingerprint=norm.get("log_fingerprint") or [],
-        component=str(norm.get("component", "")),
+        component=component,
         severity=str(norm.get("severity", "")),
         symptom=str(norm.get("symptom", "")),
         root_cause=str(norm.get("root_cause", "")),
         remediation=norm.get("remediation") or [],
         error_codes=norm.get("error_codes") or [],
         db_types=norm.get("db_types") or [],
+        target_types=norm.get("target_types") or [],
+        dimension=str(norm.get("dimension", "")),
+        grade=str(norm.get("grade", "")),
+        counter_evidence=str(norm.get("counter_evidence", "")),
         false_positive=str(norm.get("false_positive", "")),
+        log_samples=norm.get("log_samples") or [],
         source_note=str(norm.get("source_note", "")),
         updated_at=str(norm.get("updated_at", "")),
-        metadata=norm.get("metadata") or {},
+        metadata=metadata,
     )
 
 

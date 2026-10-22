@@ -21,7 +21,7 @@
 | `extractors/text.py` | 文本/JSON/XML/CSV/日志提取 | `TextExtractor` 等 |
 | `extractors/image.py` | 图片元数据提取 | `ImageExtractor` |
 | `extractors/excel.py` | Excel 提取 | `ExcelExtractor` |
-| `chunking/text.py` | 文本分块 + mini chunk 切分 | `chunk_text_sections()`、`split_mini_chunks()`，基于 `chonkie.SentenceChunker` |
+| `chunking/text.py` | 文本分块 + mini chunk 切分 + 片长硬上限兜底 | `chunk_text_sections()`、`split_mini_chunks()`、`hard_split()`，基于 `chonkie.SentenceChunker` |
 | `chunking/log.py` | 日志分块 | `LogChunker`：按 Drain 模板聚类 |
 | `chunking/large.py` | 大 chunk 合并 | `generate_large_chunks(ratio=4)` |
 | `chunking/image.py` | 图片分块 | `chunk_image_section()` |
@@ -40,8 +40,8 @@
 | `vector_store/factory.py` | 存储工厂 | `create_vector_store()` |
 | `vector_store/searcher.py` | 检索逻辑 | `Searcher`：`hybrid_search()` |
 | `log_patterns/` | 日志模式库导入包（独立于文档 pipeline） | — |
-| `log_patterns/models.py` | 日志模式数据模型 | `LogPattern`（字段与设计文档 3.1 对齐） |
-| `log_patterns/parsers.py` | JSON/YAML/CSV/TSV/Excel 解析 | `BaseLogPatternParser`、`get_parser()`、字段别名归一化 |
+| `log_patterns/models.py` | 日志模式数据模型 | `LogPattern`（字段与日志数据模型 v2.1 的 17 字段对齐，严格校验枚举/必填） |
+| `log_patterns/parsers.py` | JSON/YAML/CSV/TSV/Excel 解析 | `BaseLogPatternParser`、`get_parser()`、字段别名归一化、component 历史别名归一、未知键收进 `metadata["unrecognized"]` |
 | `log_patterns/chunker.py` | 1 standard + 2~4 mini 分块 | `LogPatternChunker` |
 | `log_patterns/payload.py` | Qdrant payload 构建 | `build_pattern_payload()` |
 | `log_patterns/importer.py` | 解析 → 分块 → 嵌入 → 入库编排 | `import_log_patterns()`、`import_log_patterns_from_data()` |
@@ -49,6 +49,7 @@
 | `import_log_patterns.py` | 顶层便捷入口 | 等价于 `python -m log_patterns.cli` |
 | `utils.py` | 工具函数：保存结果、表格检测（返回 `consumed_lines` 供正文按行精确去重）、ZIP 解压、文本清理 | `save_results()`、`detect_and_parse_table()`、`safe_extract_zip()`、`clean_text()` |
 | `query.py` | 独立查询 CLI | `Searcher.search()` |
+| `audit_chunk_degeneration.py` | 退化块审计：扫 Qdrant 统计超长标准块/超限 mini/退化块清单（只读） | `summarize()`、`format_report()` |
 | `docs/query/chunk-aware-search-strategy.md` | 查询策略设计文档 | — |
 | `docs/qdrant-test-im-chunks-audit.md` | Qdrant 实测报告 | — |
 | `web/app.py` | Flask 后端 API | 58002 端口 |

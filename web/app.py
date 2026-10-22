@@ -1248,7 +1248,15 @@ def api_log_patterns_import_json():
 
     请求体:
     {
-        "patterns": [{ "pattern_id": "LP-0001", ... }],
+        "patterns": [{
+            "pattern_id": "LP-0087",
+            "log_fingerprint": ["REORGANIZE PARTITION", "parse ddl error"],
+            "component": "iatrack",
+            "severity": "high",
+            "dimension": "consistency",
+            "grade": "confirmed",
+            ...
+        }],
         "collection_name": "可选"
     }
     """
